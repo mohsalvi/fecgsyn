@@ -97,6 +97,7 @@ for i = 1:10            % generate 5 cases of each
             out = clean_compress(out);
             save([path 'fecgsyn' sprintf('%2.2d_snr%2.2ddB_l%d_c2',i,SNRmn,loop)],'out')
             % Case 3: contraction
+            %% TODO: I guess I am cleaning the signal change the noise types
             param = paramnst;
             x = linspace(-param.n/10,param.n/10,param.n);
             mu = 0;

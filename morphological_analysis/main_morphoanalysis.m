@@ -68,7 +68,7 @@ fls =  arrayfun(@(x)x.name,fls,'UniformOutput',false);
 stats_ica = zeros(length(fls),4);
 stats_ts = zeros(length(fls),4);
 tic
-for i = 1:600   
+for i = 1:100   
     disp(['Extracting file ' fls{i} '..'])
     % = loading data
     load(fls{i})
@@ -83,7 +83,7 @@ for i = 1:600
     REFRAC = round(.15*fs)/1000; % detector refractory period
     mixture = double(out.mecg) + sum(cat(3,out.fecg{:}),3) ...
         + noise;     % re-creating abdominal mixture
-       
+    mixture = mixture(ch,:);    % reducing number of channels
     
     %% Experiment 1
     % = preprocessing channels
@@ -92,7 +92,7 @@ for i = 1:600
     wo = 60/(fs/2); bw = wo/35;
     [b_lp,a_lp] = butter(5,HF_CUT/(fs/2),'low');
     [b_bas,a_bas] = butter(3,LF_CUT/(fs/2),'high');
-    for j=ch
+    for j=1:length(ch)
         lpmix = filtfilt(b_lp,a_lp,mixture(j,:));
         mixture(j,:) = filtfilt(b_bas,a_bas,lpmix);
     end
@@ -119,13 +119,15 @@ for i = 1:600
     % = using TSc
     disp('TS extraction ..')
     % look for channel with largest SNRfm
-    amps = sum(double(out.fecg{1}).^2,2)./sum(double(out.mecg).^2,2);
-    [~,chts]=max(amps);       % chosing the channel with highest fetal signal ratio
-    residual = mecg_cancellation(out.mqrs,mixture(chts,:),'TS-CERUTTI',0);
-    qrsts = qrs_detect(residual,TH,REFRAC,fs);
-    [F1,RMS,PPV,SE] = Bxb_compare(out.fqrs{1},qrsts,INTERV);
-    stats_ts(i,:) = [F1,RMS,PPV,SE];
-
+    for j = 1:length(ch)
+        residual = mecg_cancellation(out.mqrs,mixture(j,:),'TS-CERUTTI',0);
+        qrsts = qrs_detect(residual,TH,REFRAC,fs);
+        [F1(j),RMS(j),PPV(j),SE(j)] = Bxb_compare(out.fqrs{1},qrsts,INTERV);
+    end
+    [~,maxch] = max(F1);
+    stats_ts(i,:) = [F1(maxch),RMS(maxch),PPV(maxch),SE(maxch)];
+    
+    
     % Debug plots
     if debug && ~isempty(qrsica)
         close all
@@ -173,7 +175,6 @@ if debug
     FONT_SIZE = 12;
     MARKER_SIZE = 7;
     fig1=figure(1)
-    values = []; origin = []; ext = {};
     base = cellfun(@(x) ~isempty(regexp(x, '_l\d.mat$', 'match')), fls);   
     c1 = cellfun(@(x) ~isempty(regexp(x, '_c1.mat$', 'match')), fls);
     c2 = cellfun(@(x) ~isempty(regexp(x, '_c2.mat$', 'match')), fls);
