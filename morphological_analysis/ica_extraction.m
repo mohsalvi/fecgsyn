@@ -101,9 +101,9 @@ while (loop)  %quit will be given as soon as complete signal is filtered
     % = decide for one component
     %Saving segment
     [maxF1,maxch] = max(F1);
-    if maxF1 > .8
+%     if maxF1 > .8
         icamorph(samp2filt) = dataICA(maxch,:);
-    end
+%     end
     
     %Augment offsets
     ssamp = endsamp+1;
