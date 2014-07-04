@@ -52,7 +52,7 @@ generate = 0;   % boolean, data should be generated?
 % channels to be used in ICA                
 % ch = 1:32;      
 ch = [1:2:8 10:2:16 17:2:24 26:2:32];
-debug = 1;
+debug = 0;
 
 %% Data Generation
 if generate
@@ -66,11 +66,13 @@ end
 fls = dir('*.mat');     % looking for .mat (creating index)
 fls =  arrayfun(@(x)x.name,fls,'UniformOutput',false);
 stats_ica = zeros(length(fls),4);
-stats_tsc = zeros(length(fls),4);
-for i = 1:length(fls)   
+stats_ts = zeros(length(fls),4);
+tic
+for i = 1:600   
     disp(['Extracting file ' fls{i} '..'])
     % = loading data
     load(fls{i})
+    disp(num2str(i))
     noise = sum(cat(3,out.noise{:}),3);
     if isempty(noise)
         noise = zeros(size(out.mecg));
@@ -94,6 +96,8 @@ for i = 1:length(fls)
         lpmix = filtfilt(b_lp,a_lp,mixture(j,:));
         mixture(j,:) = filtfilt(b_bas,a_bas,lpmix);
     end
+    % normalizing (significant for ICA)
+    mixture = diag(1./max(mixture'))*mixture;
     
     % = using ICA
     disp('ICA extraction ..')
@@ -102,27 +106,61 @@ for i = 1:length(fls)
     
     % Calculate quality measures
     qrsica = qrs_detect(icasig,TH,REFRAC,fs);
-    [F1,RMS,PPV,SE] = Bxb_compare(out.fqrs{1},qrsica,INTERV);
-    stats_ica(end+1,:) = [F1,RMS,PPV,SE];
+    if isempty(qrsica)
+        F1= 0;
+        RMS = NaN;
+        PPV = 0;
+        SE = 0;
+    else
+        [F1,RMS,PPV,SE] = Bxb_compare(out.fqrs{1},qrsica,INTERV);
+    end
+    stats_ica(i,:) = [F1,RMS,PPV,SE];
     
     % = using TSc
     disp('TS extraction ..')
     % look for channel with largest SNRfm
     amps = sum(double(out.fecg{1}).^2,2)./sum(double(out.mecg).^2,2);
     [~,chts]=max(amps);       % chosing the channel with highest fetal signal ratio
-    residual = mecg_cancellation(out.mqrs,mixture(chts,:),'TS-CERUTTI',debug);
+    residual = mecg_cancellation(out.mqrs,mixture(chts,:),'TS-CERUTTI',0);
     qrsts = qrs_detect(residual,TH,REFRAC,fs);
     [F1,RMS,PPV,SE] = Bxb_compare(out.fqrs{1},qrsts,INTERV);
-    stats_tsc(end+1,:) = [F1,RMS,PPV,SE];
+    stats_ts(i,:) = [F1,RMS,PPV,SE];
 
     % Debug plots
-    if debug
-        hold on
-        plot(out.fqrs{1}/fs,2000,'og','MarkerSize',7)
+    if debug && ~isempty(qrsica)
+        close all
+        FONT_SIZE = 15;
+        LINE = 2;
+        MSIZE = 7;
+        tm = 1/fs:1/fs:length(residual)/fs;
+        figure('name','MECG cancellation');
+        subplot(1,2,1)
+        plot(tm,mixture(chts,:),'k','LineWidth',LINE-1);
+        hold on, plot(tm,icasig-2,'-b','LineWidth',LINE);
+        plot(out.fqrs{1}/fs,-1,'xr','MarkerSize',MSIZE)
+        plot(tm(qrsica),-1,'or','LineWidth',LINE,'MarkerSize',MSIZE);
+        legend('mixture','residual','reference FQRS','detected FQRS');
+        title('ICA for extracting the FECG');
+        xlabel('Time [sec]'); ylabel('Amplitude [NU]')
+        
+        subplot(1,2,2)
+        
+        plot(tm,mixture(chts,:),'k','LineWidth',LINE-1);
+        hold on, plot(tm,residual-2,'b','LineWidth',LINE);
+        plot(out.fqrs{1}/fs,-1,'xr','MarkerSize',MSIZE)
+        plot(tm(qrsts),-1,'or','LineWidth',LINE,'MarkerSize',MSIZE);
+        legend('mixture','residual','reference FQRS','detected FQRS');
+        title('Template subtraction for extracting the FECG');
+        xlabel('Time [sec]'); ylabel('Amplitude [NU]')
+        set(findall(gcf,'type','text'),'fontSize',FONT_SIZE);
+        linkaxes
+
+
     end
-    clearvars -except stats_ica stats_tsc fls ch debug
+    clearvars -except stats_ica stats_ts fls ch debug
 
 end
+toc
 %% Morphological Analysis
 
 

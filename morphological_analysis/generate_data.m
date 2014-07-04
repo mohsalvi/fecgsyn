@@ -117,7 +117,7 @@ for i = 1:10            % generate 5 cases of each
             out = run_ecg_generator(param,debug);  % stationary output
             out = clean_compress(out);
             save([path 'fecgsyn' sprintf('%2.2d_snr%2.2ddB_l%d_c4',i,SNRmn,loop)],'out')
-            % %             % Case 5: twins
+            % Case 5: twins
             param = paramnst;
             param.fhr(2) = 135+25*randn;
             param.fres(2) = 0.9 + 0.05*randn;
