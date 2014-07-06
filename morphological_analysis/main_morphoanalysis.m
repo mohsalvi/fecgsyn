@@ -40,7 +40,7 @@
 % saving path
 if isunix
 %     path = ['/media/fernando/Data/foobar/fecgdata_test/' datestr(date,'yyyy.mm.dd') '/'];
- path = '/media/fernando/FetalEKG/2014.06_fecgsyn_simulations';
+ path = '/media/fernando/FetalEKG/2014.07_fecgsyn_simulations(2.0)/';
 else
     path = ['C:\foobar\fecgdata\' datestr(date,'yyyy.mm.dd') '\'];
 end

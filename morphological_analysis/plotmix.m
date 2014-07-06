@@ -4,6 +4,12 @@ FONT_SIZE = 15;
 LINE_WIDTH = 1.2;
 MARKER_SIZE = 5;
 N = 5;      % number of plots
+
+if ~exist('out.mixture')
+    out.mixture = double(out.mecg) + sum(cat(3,out.fecg{:}),3) ...
+        + sum(cat(3,out.noise{:}),3);     % re-creating abdominal mixture
+    
+end
 Nchan = size(out.mixture,1);
 chan = randsample(1:Nchan,N);
 % watch out! tight_subplot has a different license and therefore should not

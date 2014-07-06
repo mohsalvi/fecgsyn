@@ -34,7 +34,7 @@ debug = 0;
 %% Generating simulated data with various SNR for morphological analysis
 % global parameters
 paramorig.fs = 1000;            % sampling frequency [Hz]
-paramorig.n = 300*paramorig.fs;  % number of data points to generate (5 min)
+paramorig.n = 30*paramorig.fs;  % number of data points to generate (5 min)
 paramorig.SNRfm = -6;          % fetal SNR [dB]
 
 % electrode positions
@@ -61,13 +61,13 @@ for i = 1:10            % generate 5 cases of each
     %plotmix(out)
     out = clean_compress(out);
     save([path 'fecgsyn' sprintf('%2.2d',i)],'out')
-    paramst = out.param;                     % keeping same parameters
-    
+    paramst = out.param;                    % keeping same parameters
+    clear out
     %% adding some noise
     for SNRmn = -3:3:12 % six noise levels
         for loop = 1:5 % repeat same setup
             % just recalculating noise five times
-            % reseting config
+            % reseting config    outst = out;
             disp(['Generating for SNRmn=' num2str(SNRmn) ' simulation number ' num2str(i) '.'])
             param = paramst;
             param.SNRmn = SNRmn;    % varying SNRmn
@@ -77,33 +77,44 @@ for i = 1:10            % generate 5 cases of each
             param.fres = 0.9 + 0.05*randn; % foetus respiration frequency
             out = run_ecg_generator(param,debug);  % stationary output
             %plotmix(out)
-            out = clean_compress(out);
+            out = clean_compress(out);                   
             save([path 'fecgsyn' sprintf('%2.2d_snr%2.2ddB_l%d',i,SNRmn,loop)],'out')
-            paramnst = out.param;
+            out_noise = out;
+            param_noise = out.param;
+            param_noise.ntype = {};         % will not be re-simulated
+            param_noise.noise_fct = {};     % will not be re-simulated
+            param_noise.posdev = 0;    % maternal and fetal hearts fixed
+            clear out
             %% non-stationary mixture
             % Case 1: foetal movement
-            param = paramnst;
+            % no need to simulate again
+            param = param_noise;
             param.ftraj{1} = 'helix'; % giving spiral-like movement to fetus
             out = run_ecg_generator(param,debug);  % stationary output
             out = clean_compress(out);
+            out.noise = out_noise.noise;    % re-inserting noise
             save([path 'fecgsyn' sprintf('%2.2d_snr%2.2ddB_l%d_c1',i,SNRmn,loop)],'out')
+            clear out
             % Case 2: rate rate accelerations
-            param = paramnst;
+            param = param_noise;
             param.macc = 20; % maternal acceleration in HR [bpm]
             param.mtypeacc = 'tanh'; % hyperbolic tangent acceleration
             param.facc = -40; % foetal decceleration in HR [bpm]
             param.ftypeacc = {'mexhat'}; % gaussian drop and recovery
             out = run_ecg_generator(param,debug);  % stationary output
             out = clean_compress(out);
+            out.noise = out_noise.noise;    % re-inserting noise
             save([path 'fecgsyn' sprintf('%2.2d_snr%2.2ddB_l%d_c2',i,SNRmn,loop)],'out')
+            clear out
             % Case 3: contraction
-            %% TODO: I guess I am cleaning the signal change the noise types
-            param = paramnst;
+            param = param_noise;
             x = linspace(-param.n/10,param.n/10,param.n);
             mu = 0;
             gauss = (100/(param.n*sqrt(2*pi)))*exp(-(x-(x(1)*mu)).^2/(2*(param.n/50)^2)); % approximating
             gauss = gauss/max(gauss);                      % uterine contraction by gaussian modulated MA
             param.noise_fct{1} = gauss;
+            param.ntype = {'MA'};
+            param.SNRmn = -6;         % put additional contraction with strong power
             param.macc = 40;
             param.mtypeacc = 'gauss';
             param.facc = -30;
@@ -111,15 +122,19 @@ for i = 1:10            % generate 5 cases of each
             param.faccstd{1} = 0.5;
             out = run_ecg_generator(param,debug);  % stationary output
             out = clean_compress(out);
+            out.noise = [out.noise out_noise.noise];
             save([path 'fecgsyn' sprintf('%2.2d_snr%2.2ddB_l%d_c3',i,SNRmn,loop)],'out')
+            clear out
             % Case 4: ectopic beats
-            param = paramnst;
+            param = param_noise;
             param.mectb = 1; param.fectb = 1;
             out = run_ecg_generator(param,debug);  % stationary output
             out = clean_compress(out);
+            out.noise = out_noise.noise;    % re-inserting noise
             save([path 'fecgsyn' sprintf('%2.2d_snr%2.2ddB_l%d_c4',i,SNRmn,loop)],'out')
+            clear out
             % Case 5: twins
-            param = paramnst;
+            param = param_noise;
             param.fhr(2) = 135+25*randn;
             param.fres(2) = 0.9 + 0.05*randn;
             param.fheart{2} = [pi/10 0.3 -0.2];
@@ -127,7 +142,9 @@ for i = 1:10            % generate 5 cases of each
             param=rmfield(param,{'faccmean' 'facc' 'ftypeacc' 'faccstd' 'ftraj'});
             out = run_ecg_generator(param,debug);  % stationary output
             out = clean_compress(out);
+            out.noise = out_noise.noise;    % re-inserting noise
             save([path 'fecgsyn' sprintf('%2.2d_snr%2.2ddB_l%d_c5',i,SNRmn,loop)],'out')
+            clear out
         end
     end
 end
