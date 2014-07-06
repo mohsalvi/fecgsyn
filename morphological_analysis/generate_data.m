@@ -97,11 +97,11 @@ for i = 1:10            % generate 5 cases of each
             clear out
             % Case 2: rate rate accelerations
             param = param_noise;
-            param.macc = 20; % maternal acceleration in HR [bpm]
-            param.mtypeacc = 'tanh'; % hyperbolic tangent acceleration
-            param.facc = -40; % foetal decceleration in HR [bpm]
-            param.ftypeacc = {'mexhat'}; % gaussian drop and recovery
-            out = run_ecg_generator(param,debug);  % stationary output
+            param.macc = (20+10*randn)*sign(randn); % maternal acceleration in HR [bpm]
+            param.mtypeacc = 'tanh';                % hyperbolic tangent acceleration
+            param.facc = (30 + 10*randn)*sign(randn); % foetal decceleration in HR [bpm]
+            param.ftypeacc = {'mexhat'};            % gaussian drop and recovery
+            out = run_ecg_generator(param,debug);   % stationary output
             out = clean_compress(out);
             out.noise = out_noise.noise;    % re-inserting noise
             save([path 'fecgsyn' sprintf('%2.2d_snr%2.2ddB_l%d_c2',i,SNRmn,loop)],'out')

@@ -6,8 +6,12 @@ MARKER_SIZE = 5;
 N = 5;      % number of plots
 
 if ~exist('out.mixture')
-    out.mixture = double(out.mecg) + sum(cat(3,out.fecg{:}),3) ...
-        + sum(cat(3,out.noise{:}),3);     % re-creating abdominal mixture
+    if ~isempty(out.noise)
+        out.mixture = double(out.mecg) + sum(cat(3,out.fecg{:}),3) ...
+            + sum(cat(3,out.noise{:}),3);     % re-creating abdominal mixture
+    else
+        out.mixture = double(out.mecg) + sum(cat(3,out.fecg{:}),3);
+    end
     
 end
 Nchan = size(out.mixture,1);
@@ -27,7 +31,7 @@ for i = 1:N
         plot(out.fqrs{j},valf,'xr','MarkerSize',MARKER_SIZE,'MarkerFaceColor','r')
     end
     valm = 1.2*median(out.mixture(chan(i),out.mqrs))*ones(1,length(out.mqrs));
-    plot(out.mqrs,valm,'dk','MarkerSize',MARKER_SIZE,'MarkerFaceColor','k')   
+    plot(out.mqrs,valm,'dk','MarkerSize',MARKER_SIZE,'MarkerFaceColor','k')
     ylabel(['ch' num2str(chan(i))],'FontSize',FONT_SIZE)
     hold off
 end
