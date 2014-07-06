@@ -46,7 +46,7 @@ else
 end
 
 %% Set-up parameters
-generate = 0;   % boolean, data should be generated? 
+generate = 1;   % boolean, data should be generated? 
                 % If not, path should direct to data location
 
 % channels to be used in ICA                
