@@ -64,7 +64,7 @@ for i = 1:10            % generate 5 cases of each
     paramst = out.param;                    % keeping same parameters
     clear out
     %% adding some noise
-    for SNRmn = -3:3:12 % six noise levels
+    for SNRmn = 0:3:12 % six noise levels
         for loop = 1:5 % repeat same setup
             % just recalculating noise five times
             % reseting config    outst = out;
