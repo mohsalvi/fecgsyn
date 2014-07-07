@@ -34,8 +34,7 @@ debug = 0;
 %% Generating simulated data with various SNR for morphological analysis
 % global parameters
 paramorig.fs = 1000;            % sampling frequency [Hz]
-paramorig.n = 30*paramorig.fs;  % number of data points to generate (5 min)
-paramorig.SNRfm = -6;          % fetal SNR [dB]
+paramorig.n = 300*paramorig.fs;  % number of data points to generate (5 min)
 
 % electrode positions
 x = pi/12*[3 4 5 6 7 8 9 10]' -pi/2;     % 32 abdominal channels
@@ -57,6 +56,7 @@ for i = 1:10            % generate 5 cases of each
     %% stationary mixture
     paramst.mtypeacc = 'none';      % force constant mother heart rate
     paramst.ftypeacc = {'none'};    % force constant foetal heart rate
+    paramst.SNRfm = -9 + 2*randn;
     out = run_ecg_generator(paramst,debug);  % stationary output
     %plotmix(out)
     out = clean_compress(out);
@@ -70,6 +70,7 @@ for i = 1:10            % generate 5 cases of each
             % reseting config    outst = out;
             disp(['Generating for SNRmn=' num2str(SNRmn) ' simulation number ' num2str(i) '.'])
             param = paramst;
+            param.SNRfm = -9 + 2*randn;
             param.SNRmn = SNRmn;    % varying SNRmn
             param.ntype = {'MA','MA'}; % noise types
             param.noise_fct = {1+.5*randn,1+.5*randn,1+.5*randn}; % constant SNR (each noise may be modulated by a function)

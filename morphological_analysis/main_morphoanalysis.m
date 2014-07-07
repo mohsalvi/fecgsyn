@@ -68,7 +68,7 @@ fls =  arrayfun(@(x)x.name,fls,'UniformOutput',false);
 stats_ica = zeros(length(fls),4);
 stats_ts = zeros(length(fls),4);
 tic
-for i = 1:100   
+for i = 1:length(fls)   
     disp(['Extracting file ' fls{i} '..'])
     % = loading data
     load(fls{i})
