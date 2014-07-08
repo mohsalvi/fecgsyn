@@ -1,4 +1,4 @@
-function icamorph = ica_extraction(data,FS,chan,refqrs,varargin)
+function [icasig,qrsica] = ica_extraction(data,FS,chan,refqrs,varargin)
 % Uses Independent Component Analysis (ICA) over selected channels input 
 % data and choses best channel based on th F1 measure.
 % 
@@ -53,13 +53,13 @@ end
 INTERV = round(0.05*FS);    % BxB acceptance interval
 TH = 0.3;   % detector threshold
 REFRAC = round(.15*FS)/1000; % detector refractory period
-
+qrsica = [];
 %% Run ICA on every block
 blength = blength * FS;
 ssamp = 1;          % starting sample to filter (offset)
 endsamp = ssamp + blength - 1;      % ending sample to filter
 loop = 1;           % allows iterations
-icamorph = zeros(1,length(data));      % best produced ICA channel
+icasig = zeros(1,length(data));      % best produced ICA channel
 if size(data,2)<endsamp
     blength = Data.length;
     endsamp = size(data,2);
@@ -99,7 +99,8 @@ while (loop)  %quit will be given as soon as complete signal is filtered
     % = decide for one component
     %Saving segment
     [maxF1,maxch] = max(F1);
-    icamorph(samp2filt) = dataICA(maxch,:);
+    qrsica = [qrsica (qrsdet{maxch}+ssamp-1)];
+    icasig(samp2filt) = dataICA(maxch,:);
     
     %Augment offsets
     ssamp = endsamp+1;

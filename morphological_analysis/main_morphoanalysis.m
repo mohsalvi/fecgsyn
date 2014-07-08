@@ -42,17 +42,18 @@ if isunix
 %     path = ['/media/fernando/Data/foobar/fecgdata_test/' datestr(date,'yyyy.mm.dd') '/'];
  path = '/media/fernando/FetalEKG/2014.07_fecgsyn_simulations(2.0)/';
 else
-    path = ['C:\foobar\fecgdata\' datestr(date,'yyyy.mm.dd') '\'];
+    path = ['C:\foobar\fecgdata\2014.07.07\'];
 end
 
 %% Set-up parameters
-generate = 1;   % boolean, data should be generated? 
+generate = 0;   % boolean, data should be generated? 
                 % If not, path should direct to data location
 
 % channels to be used in ICA                
 % ch = 1:32;      
-ch = [1:2:8 10:2:16 17:2:24 26:2:32];
-debug = 0;
+% ch = [1:2:8 10:2:16 17:2:24 26:2:32];
+ch = [1 8 19 22 25 32]
+debug = 1;
 
 %% Data Generation
 if generate
@@ -88,7 +89,7 @@ for i = 1:length(fls)
     %% Experiment 1
     % = preprocessing channels
     HF_CUT = 100; % high cut frequency
-    LF_CUT = 0.7; % low cut frequency
+    LF_CUT = 3; % low cut frequency
     wo = 60/(fs/2); bw = wo/35;
     [b_lp,a_lp] = butter(5,HF_CUT/(fs/2),'low');
     [b_bas,a_bas] = butter(3,LF_CUT/(fs/2),'high');
@@ -102,18 +103,17 @@ for i = 1:length(fls)
     % = using ICA
     disp('ICA extraction ..')
     loopsec = 60;   % in seconds
-    icasig = ica_extraction(mixture,fs,ch,out.fqrs{1},loopsec);     % extract using IC
+    [icasig,qrsica] = ica_extraction(mixture,fs,ch,out.fqrs{1},loopsec);     % extract using IC
     
     % Calculate quality measures
-    qrsica = qrs_detect(icasig,TH,REFRAC,fs);
-    if isempty(qrsica)
-        F1= 0;
-        RMS = NaN;
-        PPV = 0;
-        SE = 0;
-    else
+%     if isempty(qrsica)
+%         F1= 0;
+%         RMS = NaN;
+%         PPV = 0;
+%         SE = 0;
+%     else
         [F1,RMS,PPV,SE] = Bxb_compare(out.fqrs{1},qrsica,INTERV);
-    end
+%     end
     stats_ica(i,:) = [F1,RMS,PPV,SE];
     
     % = using TSc
@@ -137,7 +137,7 @@ for i = 1:length(fls)
         tm = 1/fs:1/fs:length(residual)/fs;
         figure('name','MECG cancellation');
         subplot(1,2,1)
-        plot(tm,mixture(chts,:),'k','LineWidth',LINE-1);
+        plot(tm,mixture(maxch,:),'k','LineWidth',LINE-1);
         hold on, plot(tm,icasig-2,'-b','LineWidth',LINE);
         plot(out.fqrs{1}/fs,-1,'xr','MarkerSize',MSIZE)
         plot(tm(qrsica),-1,'or','LineWidth',LINE,'MarkerSize',MSIZE);
@@ -147,7 +147,7 @@ for i = 1:length(fls)
         
         subplot(1,2,2)
         
-        plot(tm,mixture(chts,:),'k','LineWidth',LINE-1);
+        plot(tm,mixture(maxch,:),'k','LineWidth',LINE-1);
         hold on, plot(tm,residual-2,'b','LineWidth',LINE);
         plot(out.fqrs{1}/fs,-1,'xr','MarkerSize',MSIZE)
         plot(tm(qrsts),-1,'or','LineWidth',LINE,'MarkerSize',MSIZE);
